@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Site not found · GitHub Pages</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100vw; height: 100vh; overflow: hidden; }
+ 
+    /* ── 404 PAGE ── */
+    #fake-404 {
+      position: fixed; inset: 0;
+      background: #f0f0f0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start; padding-top: 18vh;
+      z-index: 100;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      user-select: none;
+      pointer-events: all;
+    }
+    #fake-404.hidden { display: none; }
+    .gh-404-number {
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1;
+      margin-bottom: 2.2rem;
+    }
+    .gh-404-title {
+      font-size: 0.93rem;
+      font-weight: 600;
+      color: #57606a;
+      margin-bottom: 0.5rem;
+    }
+    .gh-404-body {
+      font-size: 0.84rem;
+      color: #57606a;
+      text-align: center;
+      max-width: 460px;
+      line-height: 1.6;
+      margin-bottom: 2.2rem;
+    }
+    .gh-404-body a { color: #0969da; text-decoration: none; }
+    .gh-404-body a:hover { text-decoration: underline; }
+    .gh-404-links {
+      font-size: 0.78rem;
+      color: #57606a;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    .gh-404-links a { color: #57606a; text-decoration: none; }
+    .gh-404-links a:hover { color: #0969da; text-decoration: underline; }
+    .gh-404-links .gh-dash { color: #aaa; }
+    .gh-octocat {
+      width: 46px; height: 46px;
+      margin-top: 1.8rem;
+      opacity: 0.22;
+    }
+ 
+    /* ── CANVAS (fx overlay) ── */
+    #fx-canvas {
+      position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 50; pointer-events: none; display: block;
+    }
+ 
+    /* ── CIPHER APP ── */
+    #app {
+      position: fixed; inset: 0;
+      background: #080808;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start; padding-top: 18vh;
+      opacity: 0; pointer-events: none;
+      font-family: 'Share Tech Mono', monospace;
+      overflow: hidden; z-index: 1;
+      transition: opacity 0s;
+    }
+    #app.visible { opacity: 1; pointer-events: all; }
+    #app::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,104,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,104,0,0.04) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
+    #app::after { content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(255,104,0,0.08) 0%, transparent 70%); pointer-events: none; }
+ 
+    .container { position: relative; z-index: 2; width: 100%; max-width: 700px; padding: 2rem; }
+    .header { text-align: center; margin-bottom: 2.5rem; opacity: 0; transform: translateY(-20px); transition: all 0.6s ease 0.3s; }
+    #app.visible .header { opacity: 1; transform: translateY(0); }
+    .header-title { font-family: 'Orbitron', monospace; font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 900; color: #ff6800; letter-spacing: 0.2em; text-shadow: 0 0 30px rgba(255,104,0,0.5), 0 0 60px rgba(255,104,0,0.2); line-height: 1; }
+    .header-line { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, #ff6800, transparent); margin: 1rem 0 0.5rem; opacity: 0.6; }
+    .header-sub { font-size: 0.65rem; letter-spacing: 0.4em; color: #ff6800; opacity: 0.4; text-transform: uppercase; }
+ 
+    .mode-bar { display: flex; gap: 1px; margin-bottom: 1.5rem; background: #1a0a00; border: 1px solid #2a1500; padding: 4px; opacity: 0; transform: translateY(10px); transition: all 0.5s ease 0.5s; }
+    #app.visible .mode-bar { opacity: 1; transform: translateY(0); }
+    .mode-btn { flex: 1; font-family: 'Orbitron', monospace; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.7rem; background: transparent; border: none; color: #ff6800; opacity: 0.35; transition: all 0.25s; position: relative; overflow: hidden; cursor: pointer; }
+    .mode-btn::before { content: ''; position: absolute; inset: 0; background: #ff6800; opacity: 0; transition: opacity 0.25s; }
+    .mode-btn span { position: relative; z-index: 1; }
+    .mode-btn.active { opacity: 1; color: #080808; }
+    .mode-btn.active::before { opacity: 1; }
+ 
+    .panel { opacity: 0; transform: translateY(15px); transition: all 0.5s ease 0.65s; }
+    #app.visible .panel { opacity: 1; transform: translateY(0); }
+    .box-label { font-size: 0.6rem; letter-spacing: 0.35em; color: #ff6800; opacity: 0.5; text-transform: uppercase; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem; }
+    .box-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(255,104,0,0.3), transparent); }
+    textarea { width: 100%; height: 130px; background: #0d0d0d; border: 1px solid #2a1500; border-left: 2px solid #ff6800; color: #ff9944; font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; line-height: 1.6; padding: 1rem; resize: none; outline: none; transition: border-color 0.2s, box-shadow 0.2s; caret-color: #ff6800; }
+    textarea::placeholder { color: rgba(255,104,0,0.2); }
+    textarea:focus { border-color: #ff6800; box-shadow: 0 0 20px rgba(255,104,0,0.1), inset 0 0 20px rgba(255,104,0,0.03); }
+ 
+    .exec-wrap { display: flex; justify-content: center; margin: 1.2rem 0; }
+    .exec-btn { font-family: 'Orbitron', monospace; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: #080808; background: #ff6800; border: none; padding: 0.85rem 3rem; position: relative; overflow: hidden; clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%); transition: all 0.2s; box-shadow: 0 0 20px rgba(255,104,0,0.3); cursor: pointer; }
+    .exec-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%); transform: translateX(-100%); transition: transform 0.4s; }
+    .exec-btn:hover { background: #ff8c00; box-shadow: 0 0 35px rgba(255,104,0,0.5); }
+    .exec-btn:hover::before { transform: translateX(100%); }
+    .exec-btn:active { transform: scale(0.97); }
+ 
+    .output-box { width: 100%; min-height: 130px; background: #0d0d0d; border: 1px solid #2a1500; border-left: 2px solid rgba(255,104,0,0.3); color: #ff6800; font-family: 'Share Tech Mono', monospace; font-size: 0.82rem; line-height: 1.6; padding: 1rem; word-break: break-all; white-space: pre-wrap; position: relative; transition: border-color 0.3s; cursor: pointer; }
+    .output-box.has-output { border-left-color: #ff6800; box-shadow: 0 0 20px rgba(255,104,0,0.07); }
+    .output-placeholder { color: rgba(255,104,0,0.18); font-size: 0.78rem; }
+    .copy-hint { position: absolute; bottom: 0.5rem; right: 0.75rem; font-size: 0.55rem; letter-spacing: 0.2em; color: rgba(255,104,0,0.3); text-transform: uppercase; opacity: 0; transition: opacity 0.2s; }
+    .output-box.has-output:hover .copy-hint { opacity: 1; }
+    .copied-flash { position: absolute; inset: 0; background: rgba(255,104,0,0.08); display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', monospace; font-size: 0.7rem; letter-spacing: 0.3em; color: #ff6800; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .output-box.copied .copied-flash { opacity: 1; }
+ 
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .cursor-blink { display: inline-block; width: 8px; height: 1em; background: #ff6800; margin-left: 2px; vertical-align: text-bottom; animation: blink 0.8s step-end infinite; }
+ 
+    /* ── TIMER BAR ── */
+    .timer-wrap {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-top: 1.2rem; opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .timer-wrap.visible { opacity: 1; }
+    .timer-label { font-size: 0.55rem; letter-spacing: 0.3em; color: rgba(255,104,0,0.4); text-transform: uppercase; white-space: nowrap; }
+    .timer-track { flex: 1; height: 2px; background: #1a0a00; position: relative; }
+    .timer-fill { height: 100%; background: #ff6800; width: 100%; transform-origin: left; transition: background 0.5s; }
+    .timer-fill.warning { background: #ff2200; }
+    .timer-count { font-size: 0.6rem; letter-spacing: 0.15em; color: rgba(255,104,0,0.5); white-space: nowrap; font-family: 'Orbitron', monospace; min-width: 2.5rem; text-align: right; }
+ 
+    .footer { text-align: center; margin-top: 1rem; font-size: 0.55rem; letter-spacing: 0.3em; color: rgba(255,104,0,0.15); text-transform: uppercase; opacity: 0; transition: opacity 0.5s ease 0.8s; }
+    #app.visible .footer { opacity: 1; }
+    .scanlines { position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px); pointer-events: none; z-index: 1; }
+  </style>
+</head>
+<body>
+ 
+  <!-- FAKE 404 PAGE -->
+  <div id="fake-404">
+    <div class="gh-404-number">404</div>
+    <div class="gh-404-title">There isn't a GitHub Pages site here.</div>
+    <div class="gh-404-body">
+      If you're trying to publish one, <a href="https://docs.github.com/en/pages">read the full documentation</a> to learn how to set up
+      <strong>GitHub Pages</strong> for your repository, organization, or user account.
+    </div>
+    <div class="gh-404-links">
+      <a href="https://www.githubstatus.com">GitHub Status</a>
+      <span class="gh-dash">—</span>
+      <a href="https://x.com/githubstatus">@githubstatus</a>
+    </div>
+    <svg class="gh-octocat" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg" fill="#57606a">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/>
+    </svg>
+  </div>
+ 
+  <canvas id="fx-canvas"></canvas>
+ 
+  <div id="app">
+    <div class="scanlines"></div>
+    <div class="container">
+      <div class="header">
+        <div class="header-title"></div>
+        <div class="header-line"></div>
+        <div class="header-sub"></div>
+      </div>
+      <div class="mode-bar">
+        <button class="mode-btn active" id="encryptBtn" onclick="setMode('encrypt')"><span></span></button>
+        <button class="mode-btn" id="decryptBtn" onclick="setMode('decrypt')"><span></span></button>
+      </div>
+      <div class="panel">
+        <div class="box-label"></div>
+        <textarea id="inputBox" placeholder=""></textarea>
+        <div class="exec-wrap">
+          <button class="exec-btn" onclick="execute()"><span id="btnLabel"></span></button>
+        </div>
+        <div class="box-label"></div>
+        <div class="output-box" id="outputBox" onclick="copyOutput()">
+          <span class="output-placeholder" id="outputPlaceholder"></span>
+          <span id="outputText" style="display:none"></span>
+          <div class="copy-hint">click to copy</div>
+          <div class="copied-flash">COPIED</div>
+        </div>
+      </div>
+ 
+      <!-- IDLE TIMER BAR -->
+      <div class="timer-wrap" id="timerWrap">
+        <span class="timer-label">idle timeout</span>
+        <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
+        <span class="timer-count" id="timerCount">5:00</span>
+      </div>
+ 
+      <div class="footer" style="display:none"></div>
+    </div>
+  </div>
+ 
+  <script>
+    const canvas = document.getElementById('fx-canvas');
+    const ctx = canvas.getContext('2d');
+ 
+    function fitCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    fitCanvas();
+    window.addEventListener('resize', fitCanvas);
+ 
+    // ── SKULL MAP ──
+    const SKULL = [
+      [0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
+      [0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0],
+      [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+      [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+      [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+      [0,0,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0,0],
+      [0,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1],
+      [1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1],
+      [1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1],
+      [1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1],
+      [1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1],
+      [1,1,1,1,1,0,0,0,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+      [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+      [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+      [0,0,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,0,0],
+      [0,0,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,1,1,0,1,1,0,1,1,0,1,0,1,0,1,0,1,0,1,1,0,1,1,0,1,1,0,1,0,0],
+      [0,0,0,1,1,0,1,1,0,1,1,0,1,0,1,0,1,0,1,0,1,1,0,1,1,0,1,1,0,1,0,0],
+      [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+      [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+      [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    ];
+ 
+    function runSkullReveal(onDone) {
+      fitCanvas();
+      const W = canvas.width, H = canvas.height;
+      const ROWS = SKULL.length, COLS = SKULL[0].length;
+      const SKULL_SIZE = Math.min(W, H) * 0.72;
+      const CELL = SKULL_SIZE / Math.max(ROWS, COLS);
+      const cx = W / 2, cy = H / 2;
+      const skullLeft = cx - (COLS * CELL) / 2;
+      const skullTop  = cy - (ROWS * CELL) / 2;
+ 
+      const pixels = [];
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (!SKULL[r][c]) continue;
+          const isTeeth = (r >= 27 && r <= 28) || (r >= 31 && r <= 32);
+          const isCrack = (r === 6 && (c === 12 || c === 21)) || (r === 7 && (c === 11 || c === 20)) || (r === 8 && (c === 15 || c === 16));
+          let pr, pg, pb;
+          if (isTeeth) {
+            pr = 220 + Math.floor(Math.random()*35); pg = 200 + Math.floor(Math.random()*30); pb = 170 + Math.floor(Math.random()*30);
+          } else if (isCrack) {
+            pr = 40 + Math.floor(Math.random()*20); pg = 30; pb = 20;
+          } else {
+            const shade = 0.55 + Math.random() * 0.45;
+            pr = Math.floor(255 * shade);
+            pg = Math.floor((104 + Math.random()*40) * shade);
+            pb = Math.floor((Math.random()*20) * shade);
+          }
+          pixels.push({
+            tx: skullLeft + c * CELL, ty: skullTop + r * CELL,
+            x: Math.random() * W, y: Math.random() * H,
+            size: CELL, pr, pg, pb,
+          });
+        }
+      }
+ 
+      const PHASE1 = 1600, PHASE2 = 700, PHASE3 = 500;
+      const TOTAL = PHASE1 + PHASE2 + PHASE3;
+      const start = performance.now();
+      let animId;
+ 
+      function frame(now) {
+        const elapsed = now - start;
+        ctx.fillStyle = '#080808';
+        ctx.fillRect(0, 0, W, H);
+ 
+        if (elapsed < PHASE1) {
+          const t = elapsed / PHASE1;
+          pixels.forEach(p => {
+            const ease = 1 - Math.pow(1 - t, 3);
+            const px = p.x + (p.tx - p.x) * ease;
+            const py = p.y + (p.ty - p.y) * ease;
+            ctx.fillStyle = `rgba(${p.pr},${p.pg},${p.pb},${0.3 + ease * 0.7})`;
+            ctx.fillRect(px, py, p.size, p.size);
+          });
+          for (let i = 0; i < 25; i++) {
+            const p = pixels[Math.floor(Math.random() * pixels.length)];
+            const ease = 1 - Math.pow(1 - t, 3);
+            const px = p.x + (p.tx - p.x) * ease;
+            const py = p.y + (p.ty - p.y) * ease;
+            ctx.fillStyle = `rgba(255,120,0,${Math.random() * 0.35})`;
+            ctx.fillRect(px + (Math.random()-0.5)*30, py + (Math.random()-0.5)*30, 2, 2);
+          }
+        } else if (elapsed < PHASE1 + PHASE2) {
+          const t = (elapsed - PHASE1) / PHASE2;
+          const beat = Math.sin(t * Math.PI * 5) * 0.5 + 0.5;
+          const pulse = 0.75 + beat * 0.25;
+          pixels.forEach(p => {
+            ctx.fillStyle = `rgba(${p.pr},${p.pg},${p.pb},${pulse})`;
+            ctx.fillRect(p.tx, p.ty, p.size, p.size);
+          });
+          [cx - SKULL_SIZE*0.18, cx + SKULL_SIZE*0.18].forEach(ex => {
+            const g = ctx.createRadialGradient(ex, cy - SKULL_SIZE*0.05, 0, ex, cy - SKULL_SIZE*0.05, SKULL_SIZE*0.15);
+            g.addColorStop(0, `rgba(200,0,0,${0.35*beat})`); g.addColorStop(1,'rgba(200,0,0,0)');
+            ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+          });
+          const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, SKULL_SIZE*0.75);
+          grd.addColorStop(0, `rgba(255,104,0,${0.15*pulse})`); grd.addColorStop(1,'rgba(255,104,0,0)');
+          ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
+        } else {
+          const t = (elapsed - PHASE1 - PHASE2) / PHASE3;
+          const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+          pixels.forEach(p => {
+            const scale = 1 + ease * 50;
+            const px = cx + (p.tx + p.size/2 - cx)*scale - (p.size*scale)/2;
+            const py = cy + (p.ty + p.size/2 - cy)*scale - (p.size*scale)/2;
+            ctx.fillStyle = `rgba(${p.pr},${p.pg},${p.pb},${1 - ease*0.9})`;
+            ctx.fillRect(px, py, p.size*scale, p.size*scale);
+          });
+          if (t > 0.5) { ctx.fillStyle = `rgba(8,8,8,${(t-0.5)/0.5})`; ctx.fillRect(0,0,W,H); }
+        }
+ 
+        if (elapsed < TOTAL) { animId = requestAnimationFrame(frame); }
+        else { ctx.clearRect(0,0,W,H); cancelAnimationFrame(animId); onDone(); }
+      }
+      animId = requestAnimationFrame(frame);
+    }
+ 
+    function runVerticalCrackClose(onDone) {
+      fitCanvas();
+      const W = canvas.width, H = canvas.height;
+      const DURATION = 2000;
+      const start = performance.now();
+      let animId;
+ 
+      function genCrack(startX) {
+        const pts = [{x: startX, y: 0}]; let x = startX;
+        for (let y = 0; y <= H; y += 18) { x += (Math.random()-0.5)*60; x = Math.max(10,Math.min(W-10,x)); pts.push({x,y}); }
+        pts.push({x, y: H+20}); return pts;
+      }
+      const cracks = [genCrack(W*0.35), genCrack(W*0.55), genCrack(W*0.72)];
+ 
+      function drawCrack(pts, progress, glowAlpha, lineWidth) {
+        const limit = Math.floor(pts.length * progress); if (limit < 2) return;
+        ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < limit; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.strokeStyle = `rgba(255,180,50,${glowAlpha*1.5})`; ctx.lineWidth = lineWidth*4;
+        ctx.shadowColor = 'rgba(255,120,0,0.9)'; ctx.shadowBlur = 20; ctx.stroke();
+        ctx.shadowBlur = 0; ctx.strokeStyle = `rgba(255,240,180,${glowAlpha})`; ctx.lineWidth = lineWidth; ctx.stroke();
+      }
+ 
+      function crackX(pts, y) {
+        for (let i = 0; i < pts.length-1; i++) {
+          if (pts[i].y <= y && pts[i+1].y > y) { const f=(y-pts[i].y)/(pts[i+1].y-pts[i].y); return pts[i].x+(pts[i+1].x-pts[i].x)*f; }
+        } return pts[pts.length-1].x;
+      }
+ 
+      function frame(now) {
+        const elapsed = now - start;
+        const t = Math.min(elapsed / DURATION, 1);
+        ctx.clearRect(0, 0, W, H);
+        const crackProgress = Math.min(t / 0.35, 1);
+        const floodT = t < 0.35 ? 0 : (t-0.35)/0.65;
+        const floodEase = floodT < 0.5 ? 2*floodT*floodT : -1+(4-2*floodT)*floodT;
+ 
+        if (floodT > 0) {
+          ctx.beginPath(); ctx.moveTo(0,0);
+          for (let y=0;y<=H;y+=4) ctx.lineTo(crackX(cracks[0],y)*floodEase,y);
+          ctx.lineTo(0,H); ctx.closePath();
+          const lG=ctx.createLinearGradient(0,0,W*0.4,0);
+          lG.addColorStop(0,`rgba(8,8,8,${floodEase})`); lG.addColorStop(0.8,`rgba(8,8,8,${floodEase*0.85})`); lG.addColorStop(1,'rgba(8,8,8,0)');
+          ctx.fillStyle=lG; ctx.fill();
+ 
+          ctx.beginPath(); ctx.moveTo(W,0);
+          for (let y=0;y<=H;y+=4) { const rx=crackX(cracks[2],y); ctx.lineTo(rx+(W-rx)*(1-floodEase),y); }
+          ctx.lineTo(W,H); ctx.closePath();
+          const rG=ctx.createLinearGradient(W*0.6,0,W,0);
+          rG.addColorStop(0,'rgba(8,8,8,0)'); rG.addColorStop(0.2,`rgba(8,8,8,${floodEase*0.85})`); rG.addColorStop(1,`rgba(8,8,8,${floodEase})`);
+          ctx.fillStyle=rG; ctx.fill();
+ 
+          for (let seg=0;seg<2;seg++) {
+            if (floodEase > 0.3) {
+              const segT = Math.min((floodEase-0.3)/0.7,1);
+              ctx.beginPath();
+              for (let y=0;y<=H;y+=4) { const x1=crackX(cracks[seg],y),x2=crackX(cracks[seg+1],y),mid=(x1+x2)/2,hw=(x2-x1)/2*segT; if(y===0)ctx.moveTo(mid-hw,y);else ctx.lineTo(mid-hw,y); }
+              for (let y=H;y>=0;y-=4) { const x1=crackX(cracks[seg],y),x2=crackX(cracks[seg+1],y),mid=(x1+x2)/2,hw=(x2-x1)/2*segT; ctx.lineTo(mid+hw,y); }
+              ctx.closePath(); ctx.fillStyle=`rgba(8,8,8,${segT*0.9})`; ctx.fill();
+            }
+          }
+        }
+ 
+        ctx.lineJoin='round'; ctx.lineCap='round';
+        cracks.forEach((pts,i) => { const delay=i*0.08,prog=Math.max(0,Math.min((crackProgress-delay)/(1-delay),1)); drawCrack(pts,prog,0.9-floodT*0.7,1.5); });
+        if (t > 0.85) { ctx.fillStyle=`rgba(8,8,8,${(t-0.85)/0.15})`; ctx.fillRect(0,0,W,H); }
+        if (t < 1) { animId = requestAnimationFrame(frame); }
+        else { ctx.clearRect(0,0,W,H); cancelAnimationFrame(animId); onDone(); }
+      }
+      animId = requestAnimationFrame(frame);
+    }
+ 
+    // ── STATE ──
+    let typed = '', revealed = false, transitioning = false;
+ 
+    // ── IDLE TIMER (5 minutes = 300s) ──
+    const IDLE_TIMEOUT = 30;
+    let idleSecondsLeft = IDLE_TIMEOUT;
+    let idleInterval = null;
+ 
+    function startIdleTimer() {
+      clearInterval(idleInterval);
+      idleSecondsLeft = IDLE_TIMEOUT;
+      updateTimerUI();
+      idleInterval = setInterval(() => {
+        idleSecondsLeft--;
+        updateTimerUI();
+        if (idleSecondsLeft <= 0) { clearInterval(idleInterval); if (revealed && !transitioning) { transitioning = true; triggerClose(); } }
+      }, 1000);
+    }
+ 
+    function resetIdleTimer() {
+      if (!revealed) return;
+      idleSecondsLeft = IDLE_TIMEOUT;
+      updateTimerUI();
+    }
+ 
+    function stopIdleTimer() {
+      clearInterval(idleInterval);
+      idleInterval = null;
+      document.getElementById('timerWrap').classList.remove('visible');
+    }
+ 
+    function updateTimerUI() {
+      const pct = idleSecondsLeft / IDLE_TIMEOUT;
+      const fill = document.getElementById('timerFill');
+      const count = document.getElementById('timerCount');
+      fill.style.width = (pct * 100) + '%';
+      fill.classList.toggle('warning', idleSecondsLeft <= 60);
+      const m = Math.floor(idleSecondsLeft / 60);
+      const s = idleSecondsLeft % 60;
+      count.textContent = m + ':' + String(s).padStart(2, '0');
+    }
+ 
+    // ── KEY LISTENER ──
+    // On the 404 screen, only listen for the reveal word — no other interaction
+    let peekTimeout = null;
+ 
+    document.addEventListener('keydown', (e) => {
+      if (!revealed) {
+        typed += e.key.toLowerCase();
+        if (typed.length > 10) typed = typed.slice(-10);
+        if (typed.endsWith('head') && !transitioning) {
+          revealed = true; transitioning = true; triggerReveal();
+        }
+        return;
+      }
+      if (document.activeElement === document.getElementById('inputBox')) return;
+      typed += e.key.toLowerCase();
+      if (typed.length > 10) typed = typed.slice(-10);
+ 
+      // "1234" peeks the timer for 5 seconds then hides it
+      if (typed.endsWith('8295')) {
+        const wrap = document.getElementById('timerWrap');
+        wrap.classList.add('visible');
+        clearTimeout(peekTimeout);
+        peekTimeout = setTimeout(() => wrap.classList.remove('visible'), 5000);
+      }
+ 
+      if (typed.endsWith('goodbye') && !transitioning) {
+        transitioning = true; triggerClose();
+      }
+    });
+ 
+    // Idle timer resets ONLY when typing into the text box
+    document.getElementById('inputBox').addEventListener('input', () => {
+      if (revealed) resetIdleTimer();
+    });
+ 
+    function triggerReveal() {
+      ctx.fillStyle = '#080808';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Hide 404 page
+      document.getElementById('fake-404').classList.add('hidden');
+      runSkullReveal(() => {
+        document.getElementById('app').classList.add('visible');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        transitioning = false; typed = '';
+        startIdleTimer();
+      });
+    }
+ 
+    function triggerClose() {
+      stopIdleTimer();
+      runVerticalCrackClose(() => {
+        document.getElementById('app').classList.remove('visible');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Show 404 page again
+        document.getElementById('fake-404').classList.remove('hidden');
+        revealed = false; transitioning = false; typed = '';
+        document.getElementById('inputBox').value = '';
+        clearOutput();
+      });
+    }
+ 
+    // ── CIPHER LOGIC ──
+    let mode = 'encrypt';
+ 
+    function setMode(m) {
+      mode = m;
+      document.getElementById('encryptBtn').classList.toggle('active', m === 'encrypt');
+      document.getElementById('decryptBtn').classList.toggle('active', m === 'decrypt');
+      document.getElementById('btnLabel').textContent = m === 'encrypt' ? '' : '';
+      document.getElementById('inputBox').value = '';
+      clearOutput();
+      document.getElementById('inputBox').placeholder = m === 'encrypt'
+        ? ''
+        : '';
+    }
+ 
+    const SECRET = 'DrSphere$Vault#2026!xK9mP';
+ 
+    async function deriveKey(secret) {
+      const enc = new TextEncoder();
+      const km = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'PBKDF2' }, false, ['deriveKey']);
+      return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: enc.encode('cipher_salt_v1'), iterations: 100000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    }
+ 
+    const bufToHex = buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    function hexToBuf(hex) { const b = new Uint8Array(hex.length/2); for (let i=0;i<hex.length;i+=2) b[i/2]=parseInt(hex.substr(i,2),16); return b; }
+ 
+    async function encryptMsg(pt) {
+      const key = await deriveKey(SECRET);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(pt));
+      return bufToHex(iv) + ':' + bufToHex(ct);
+    }
+ 
+    async function decryptMsg(enc) {
+      const [ivH, ctH] = enc.split(':');
+      if (!ivH || !ctH) throw new Error('Invalid format');
+      const key = await deriveKey(SECRET);
+      const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: hexToBuf(ivH) }, key, hexToBuf(ctH));
+      return new TextDecoder().decode(pt);
+    }
+ 
+    async function execute() {
+      const input = document.getElementById('inputBox').value.trim();
+      if (!input) return;
+      const btn = document.querySelector('.exec-btn');
+      btn.disabled = true;
+      document.getElementById('btnLabel').textContent = '...';
+      try { typeOutput(mode === 'encrypt' ? await encryptMsg(input) : await decryptMsg(input)); }
+      catch(e) { typeOutput('// ERROR: ' + (e.message || 'failed')); }
+      document.getElementById('btnLabel').textContent = mode === 'encrypt' ? '' : '';
+      btn.disabled = false;
+    }
+ 
+    function typeOutput(text) {
+      const box = document.getElementById('outputBox'), ph = document.getElementById('outputPlaceholder'), ot = document.getElementById('outputText');
+      ph.style.display = 'none'; ot.style.display = 'inline'; ot.textContent = '';
+      box.classList.add('has-output'); box.classList.remove('copied');
+      const cur = document.createElement('span'); cur.className = 'cursor-blink'; ot.after(cur);
+      let i = 0;
+      const spd = Math.max(8, Math.min(30, 1500 / text.length));
+      const iv = setInterval(() => { ot.textContent += text[i++]; if (i >= text.length) { clearInterval(iv); cur.remove(); } }, spd);
+    }
+ 
+    function clearOutput() {
+      const box = document.getElementById('outputBox'), ph = document.getElementById('outputPlaceholder'), ot = document.getElementById('outputText');
+      ph.style.display = 'inline'; ot.style.display = 'none'; ot.textContent = '';
+      box.classList.remove('has-output', 'copied');
+      box.querySelectorAll('.cursor-blink').forEach(c => c.remove());
+    }
+ 
+    function copyOutput() {
+      const text = document.getElementById('outputText').textContent;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const box = document.getElementById('outputBox');
+        box.classList.add('copied');
+        setTimeout(() => box.classList.remove('copied'), 1000);
+      });
+    }
+ 
+    document.getElementById('inputBox').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.ctrlKey) execute();
+    });
+  </script>
+</body>
+</html>
