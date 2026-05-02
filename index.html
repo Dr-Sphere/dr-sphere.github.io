@@ -164,7 +164,7 @@
   </div>
  
   <canvas id="fx-canvas"></canvas>
-  <canvas id="skull-timer-canvas" style="position:fixed;right:0;top:0;height:100vh;opacity:0;pointer-events:none;z-index:10;"></canvas>
+  <canvas id="skull-timer-canvas" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:0;"></canvas>
  
   <div id="app">
     <div class="scanlines"></div>
@@ -498,10 +498,19 @@
       }
     }
 
-    function resizeSkullCanvas() {
+   function resizeSkullCanvas() {
       const ROWS = SKULL_TIMER_MAP.length, COLS = SKULL_TIMER_MAP[0].length;
-      const H = window.innerHeight;
-      const W = Math.round(H * COLS / ROWS);
+      const screenW = window.innerWidth;
+      const screenH = window.innerHeight;
+      // Fill the screen as much as possible while keeping aspect ratio
+      let W, H;
+      if (screenW / screenH > COLS / ROWS) {
+        H = screenH;
+        W = Math.round(H * COLS / ROWS);
+      } else {
+        W = screenW;
+        H = Math.round(W * ROWS / COLS);
+      }
       skullCanvas.width = W;
       skullCanvas.height = H;
       skullCanvas.style.width = W + 'px';
