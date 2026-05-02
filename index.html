@@ -164,7 +164,7 @@
   </div>
  
   <canvas id="fx-canvas"></canvas>
-  <canvas id="skull-timer-canvas" style="position:fixed;right:2rem;top:50%;transform:translateY(-50%);width:60px;height:75px;opacity:0;pointer-events:none;transition:opacity 0.6s;z-index:10;"></canvas>
+  <canvas id="skull-timer-canvas" style="position:fixed;right:0;top:0;height:100vh;opacity:0;pointer-events:none;z-index:10;"></canvas>
  
   <div id="app">
     <div class="scanlines"></div>
@@ -499,12 +499,16 @@
     }
 
     function resizeSkullCanvas() {
-      const W = 60;
       const ROWS = SKULL_TIMER_MAP.length, COLS = SKULL_TIMER_MAP[0].length;
+      const H = window.innerHeight;
+      const W = Math.round(H * COLS / ROWS);
       skullCanvas.width = W;
-      skullCanvas.height = Math.round(W * ROWS / COLS);
+      skullCanvas.height = H;
+      skullCanvas.style.width = W + 'px';
+      skullCanvas.style.height = H + 'px';
     }
     resizeSkullCanvas();
+    window.addEventListener('resize', () => { resizeSkullCanvas(); drawSkullTimer(idleSecondsLeft / IDLE_TIMEOUT); });
 
     function startIdleTimer() {
       clearInterval(idleInterval);
@@ -554,14 +558,15 @@
  
       // "1234" peeks the timer for 5 seconds then hides it
       if (typed.endsWith('8295')) {
-        const wrap = document.getElementById('timerWrap');
-        skullCanvas.style.transition = 'opacity 0.6s';
+        skullCanvas.style.transition = 'opacity 0.3s';
         skullCanvas.style.opacity = '1';
         clearTimeout(peekTimeout);
-        peekTimeout = setTimeout(() => { skullCanvas.style.opacity = '0'; }, 5000);
+        peekTimeout = setTimeout(() => {
+          skullCanvas.style.opacity = revealed ? '1' : '0';
+        }, 5000);
       }
  
-      if (typed.endsWith('goodbye') && !transitioning) {
+      if (typed.endsWith('toodles') && !transitioning) {
         transitioning = true; triggerClose();
       }
     });
@@ -580,7 +585,7 @@
         document.getElementById('app').classList.add('visible');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         transitioning = false; typed = '';
-        skullCanvas.style.opacity = '0';
+        skullCanvas.style.opacity = '1';
         startIdleTimer();
       });
     }
