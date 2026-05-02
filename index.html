@@ -471,8 +471,8 @@
     document.addEventListener('keydown', (e) => {
       if (!revealed) {
         typed += e.key.toLowerCase();
-        if (typed.length > 10) typed = typed.slice(-10);
-        if (typed.endsWith('head') && !transitioning) {
+        if (typed.length > 15) typed = typed.slice(-15);
+        if (typed.endsWith('hardikar') && !transitioning) {
           revealed = true; transitioning = true; triggerReveal();
         }
         return;
