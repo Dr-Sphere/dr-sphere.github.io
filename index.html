@@ -617,7 +617,16 @@
  
     function triggerClose() {
       stopIdleTimer();
+
+      // Skull flickers during the crack animation
+      drawSkullTimer(1.0);
+      skullCanvas.style.transition = 'none';
+      let flickerInterval = setInterval(() => {
+        skullCanvas.style.opacity = String(Math.random() * 0.35 + 0.05);
+      }, 120);
+
       runVerticalCrackClose(() => {
+        clearInterval(flickerInterval);
         document.getElementById('app').classList.remove('visible');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         document.getElementById('fake-404').classList.remove('hidden');
@@ -625,7 +634,7 @@
         document.getElementById('inputBox').value = '';
         clearOutput();
 
-        // Skull fades back in subtly behind the 404 page
+        // Skull settles to a subtle glow behind 404
         drawSkullTimer(1.0);
         skullCanvas.style.zIndex = '-1';
         skullCanvas.style.transition = 'opacity 3s ease';
