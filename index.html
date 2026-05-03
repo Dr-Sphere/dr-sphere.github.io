@@ -517,6 +517,9 @@
       skullCanvas.style.height = H + 'px';
     }
     resizeSkullCanvas();
+    drawSkullTimer(1.0);
+    skullCanvas.style.opacity = '0.045';
+    skullCanvas.style.zIndex = '-1';
     window.addEventListener('resize', () => { resizeSkullCanvas(); drawSkullTimer(idleSecondsLeft / IDLE_TIMEOUT); });
 
     function startIdleTimer() {
@@ -540,6 +543,7 @@
       if (!revealed) return;
       idleSecondsLeft = IDLE_TIMEOUT;
       drawSkullTimer(1.0);
+      skullCanvas.style.opacity = '0.18';
     }
 
     function stopIdleTimer() {
@@ -611,6 +615,8 @@
         document.getElementById('app').classList.add('visible');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         transitioning = false; typed = '';
+        skullCanvas.style.zIndex = '2';
+        skullCanvas.style.transition = 'opacity 0.6s';
         skullCanvas.style.opacity = '0.18';
         startIdleTimer();
       });
