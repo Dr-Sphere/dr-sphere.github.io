@@ -164,7 +164,7 @@
   </div>
  
   <canvas id="fx-canvas"></canvas>
-  <canvas id="skull-timer-canvas" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:0;transition:opacity 0.6s;"></canvas>
+  <canvas id="skull-timer-canvas" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:2;transition:opacity 0.6s;"></canvas>
  
   <div id="app">
     <div class="scanlines"></div>
@@ -523,10 +523,12 @@
       clearInterval(idleInterval);
       idleSecondsLeft = IDLE_TIMEOUT;
       drawSkullTimer(1.0);
+      skullCanvas.style.opacity = '0.18';
       idleInterval = setInterval(() => {
         idleSecondsLeft--;
         const brightness = Math.max(0, idleSecondsLeft / IDLE_TIMEOUT);
         drawSkullTimer(brightness);
+        skullCanvas.style.opacity = String(0.18 * brightness + 0.02);
         if (idleSecondsLeft <= 0) {
           clearInterval(idleInterval);
           if (revealed && !transitioning) { transitioning = true; triggerClose(); }
@@ -587,6 +589,17 @@
       ta.style.height = 'auto';
       ta.style.height = ta.scrollHeight + 'px';
     });
+
+    // Auto-expand output box as text types in
+    const outputObserver = new MutationObserver(() => {
+      const ot = document.getElementById('outputText');
+      const box = document.getElementById('outputBox');
+      if (ot && ot.textContent.length > 0) {
+        box.style.height = 'auto';
+        box.style.minHeight = box.scrollHeight + 'px';
+      }
+    });
+    outputObserver.observe(document.getElementById('outputText'), { childList: true, subtree: true, characterData: true });
  
     function triggerReveal() {
       ctx.fillStyle = '#080808';
@@ -597,7 +610,7 @@
         document.getElementById('app').classList.add('visible');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         transitioning = false; typed = '';
-        skullCanvas.style.opacity = '1';
+        skullCanvas.style.opacity = '0.18';
         startIdleTimer();
       });
     }
