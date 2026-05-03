@@ -676,10 +676,30 @@
       const btn = document.querySelector('.exec-btn');
       btn.disabled = true;
       document.getElementById('btnLabel').textContent = '...';
+
+      // Pause the timer
+      clearInterval(idleInterval);
+      idleInterval = null;
+
       try { typeOutput(mode === 'encrypt' ? await encryptMsg(input) : await decryptMsg(input)); }
       catch(e) { typeOutput('// ERROR: ' + (e.message || 'failed')); }
+
       document.getElementById('btnLabel').textContent = mode === 'encrypt' ? '' : '';
       btn.disabled = false;
+
+      // Resume the timer from where it left off
+      if (revealed) {
+        idleInterval = setInterval(() => {
+          idleSecondsLeft--;
+          const brightness = Math.max(0, idleSecondsLeft / IDLE_TIMEOUT);
+          drawSkullTimer(brightness);
+          skullCanvas.style.opacity = String(0.18 * brightness + 0.02);
+          if (idleSecondsLeft <= 0) {
+            clearInterval(idleInterval);
+            if (revealed && !transitioning) { transitioning = true; triggerClose(); }
+          }
+        }, 1000);
+      }
     }
  
     function typeOutput(text) {
