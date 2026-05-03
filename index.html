@@ -617,15 +617,19 @@
  
     function triggerClose() {
       stopIdleTimer();
-      skullCanvas.style.opacity = '0';
       runVerticalCrackClose(() => {
         document.getElementById('app').classList.remove('visible');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // Show 404 page again
         document.getElementById('fake-404').classList.remove('hidden');
         revealed = false; transitioning = false; typed = '';
         document.getElementById('inputBox').value = '';
         clearOutput();
+
+        // Skull fades back in subtly behind the 404 page
+        drawSkullTimer(1.0);
+        skullCanvas.style.zIndex = '-1';
+        skullCanvas.style.transition = 'opacity 3s ease';
+        skullCanvas.style.opacity = '0.045';
       });
     }
  
