@@ -553,6 +553,7 @@
     // ── KEY LISTENER ──
     // On the 404 screen, only listen for the reveal word — no other interaction
     let peekTimeout = null;
+    let skullHoldInterval = null;
  
     document.addEventListener('keydown', (e) => {
       if (!revealed) {
@@ -639,6 +640,13 @@
         skullCanvas.style.zIndex = '-1';
         skullCanvas.style.transition = 'opacity 3s ease';
         skullCanvas.style.opacity = '0.045';
+
+        // Keep redrawing so he doesn't vanish
+        clearInterval(skullHoldInterval);
+        skullHoldInterval = setInterval(() => {
+          if (!revealed) drawSkullTimer(1.0);
+          else clearInterval(skullHoldInterval);
+        }, 2000);
       });
     }
  
