@@ -419,7 +419,110 @@
       }
       animId = requestAnimationFrame(frame);
     }
- 
+
+    // ── BEETHOVEN'S 5TH SYMPHONY ──
+    // Synthesizes the iconic opening motif (G G G Eb — F F F D) on loop
+    // using the Web Audio API. No external files needed.
+    let beethovenCtx = null;
+    let beethovenGain = null;
+    let beethovenLoopTimeout = null;
+    let beethovenRunning = false;
+
+    function playBeethoven5th() {
+      if (beethovenRunning) return;
+      beethovenRunning = true;
+      beethovenCtx = new (window.AudioContext || window.webkitAudioContext)();
+      beethovenGain = beethovenCtx.createGain();
+      beethovenGain.gain.setValueAtTime(0.18, beethovenCtx.currentTime);
+      beethovenGain.connect(beethovenCtx.destination);
+      scheduleBeethovenLoop();
+    }
+
+    function stopBeethoven() {
+      beethovenRunning = false;
+      clearTimeout(beethovenLoopTimeout);
+      if (beethovenGain) {
+        try {
+          beethovenGain.gain.cancelScheduledValues(beethovenCtx.currentTime);
+          beethovenGain.gain.setValueAtTime(beethovenGain.gain.value, beethovenCtx.currentTime);
+          beethovenGain.gain.linearRampToValueAtTime(0, beethovenCtx.currentTime + 0.05);
+        } catch(e) {}
+      }
+      if (beethovenCtx) {
+        try { beethovenCtx.close(); } catch(e) {}
+        beethovenCtx = null;
+        beethovenGain = null;
+      }
+    }
+
+    function scheduleBeethovenLoop() {
+      if (!beethovenRunning || !beethovenCtx) return;
+
+      // Beethoven 5th opening: the famous short-short-short-LONG motif
+      // Key of C minor. Tempo ~108 BPM (eighth note = ~0.278s)
+      // Motif 1: G4 G4 G4 Eb4 (short short short long)
+      // Motif 2: F4 F4 F4 D4  (short short short long)
+      // Then a brief dramatic pause before repeating
+      const BPM = 108;
+      const eighth = 60 / BPM / 2;   // eighth note duration in seconds
+      const short = eighth * 0.85;    // note-on time (slightly short for articulation)
+      const long  = eighth * 3.5;     // the held note
+      const gap   = eighth * 0.15;    // gap between notes
+
+      // Frequencies (equal temperament)
+      const G4  = 392.00;
+      const Eb4 = 311.13;
+      const F4  = 349.23;
+      const D4  = 293.66;
+
+      // Notes: [freq, start_offset_in_eighths, duration_in_seconds]
+      const score = [
+        // Motif 1
+        [G4,  0,   short],
+        [G4,  1,   short],
+        [G4,  2,   short],
+        [Eb4, 3,   long ],
+        // Motif 2 (starts after long note + tiny rest)
+        [F4,  3 + 3.6, short],
+        [F4,  3 + 4.6, short],
+        [F4,  3 + 5.6, short],
+        [D4,  3 + 6.6, long ],
+      ];
+
+      const startTime = beethovenCtx.currentTime + 0.05;
+      let totalDuration = 0;
+
+      score.forEach(([freq, offsetEighths, dur]) => {
+        const t = startTime + offsetEighths * eighth;
+        const osc = beethovenCtx.createOscillator();
+        const envGain = beethovenCtx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, t);
+
+        // Attack / decay envelope for each note
+        envGain.gain.setValueAtTime(0, t);
+        envGain.gain.linearRampToValueAtTime(1, t + 0.02);
+        envGain.gain.setValueAtTime(1, t + dur - 0.04);
+        envGain.gain.linearRampToValueAtTime(0, t + dur);
+
+        osc.connect(envGain);
+        envGain.connect(beethovenGain);
+        osc.start(t);
+        osc.stop(t + dur + 0.05);
+
+        const end = offsetEighths * eighth + dur;
+        if (end > totalDuration) totalDuration = end;
+      });
+
+      // Loop: wait for the motif to finish + a dramatic pause, then repeat
+      const loopMs = (totalDuration + eighth * 3) * 1000;
+      beethovenLoopTimeout = setTimeout(() => {
+        if (beethovenRunning) scheduleBeethovenLoop();
+      }, loopMs);
+    }
+    // ── END BEETHOVEN ──
+
     // ── STATE ──
     let typed = '', revealed = false, transitioning = false;
  
@@ -474,7 +577,6 @@
     ];
 
     function drawSkullTimer(brightness) {
-      // brightness: 1.0 = full orange, 0.0 = black
       const ROWS = SKULL_TIMER_MAP.length, COLS = SKULL_TIMER_MAP[0].length;
       const W = skullCanvas.width, H = skullCanvas.height;
       const CELL = Math.min(W / COLS, H / ROWS);
@@ -502,7 +604,6 @@
       const ROWS = SKULL_TIMER_MAP.length, COLS = SKULL_TIMER_MAP[0].length;
       const screenW = window.innerWidth;
       const screenH = window.innerHeight;
-      // Fill the screen as much as possible while keeping aspect ratio
       let W, H;
       if (screenW / screenH > COLS / ROWS) {
         H = screenH;
@@ -552,10 +653,9 @@
       skullCanvas.style.opacity = '0';
     }
 
-    function updateTimerUI() {} // no-op, kept for compatibility
+    function updateTimerUI() {}
  
     // ── KEY LISTENER ──
-    // On the 404 screen, only listen for the reveal word — no other interaction
     let peekTimeout = null;
     let skullHoldInterval = null;
  
@@ -572,7 +672,6 @@
       typed += e.key.toLowerCase();
       if (typed.length > 10) typed = typed.slice(-10);
  
-      // "1234" peeks the timer for 5 seconds then hides it
       if (typed.endsWith('8295')) {
         skullCanvas.style.transition = 'opacity 0.3s';
         skullCanvas.style.opacity = '1';
@@ -587,7 +686,6 @@
       }
     });
  
-    // Idle timer resets ONLY when typing into the text box
     document.getElementById('inputBox').addEventListener('input', () => {
       if (revealed) resetIdleTimer();
       const ta = document.getElementById('inputBox');
@@ -595,7 +693,6 @@
       ta.style.height = ta.scrollHeight + 'px';
     });
 
-    // Auto-expand output box as text types in
     const outputObserver = new MutationObserver(() => {
       const ot = document.getElementById('outputText');
       const box = document.getElementById('outputBox');
@@ -609,7 +706,6 @@
     function triggerReveal() {
       ctx.fillStyle = '#080808';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      // Hide 404 page
       document.getElementById('fake-404').classList.add('hidden');
       runSkullReveal(() => {
         document.getElementById('app').classList.add('visible');
@@ -619,13 +715,14 @@
         skullCanvas.style.transition = 'opacity 0.6s';
         skullCanvas.style.opacity = '0.18';
         startIdleTimer();
+        playBeethoven5th(); // ← START MUSIC
       });
     }
  
     function triggerClose() {
+      stopBeethoven(); // ← STOP MUSIC IMMEDIATELY
       stopIdleTimer();
 
-      // Skull flickers during the crack animation
       drawSkullTimer(1.0);
       skullCanvas.style.transition = 'none';
       let flickerInterval = setInterval(() => {
@@ -641,13 +738,11 @@
         document.getElementById('inputBox').value = '';
         clearOutput();
 
-        // Skull settles to a subtle glow behind 404
         drawSkullTimer(1.0);
         skullCanvas.style.zIndex = '-1';
         skullCanvas.style.transition = 'opacity 3s ease';
         skullCanvas.style.opacity = '0.045';
 
-        // Keep redrawing so he doesn't vanish
         clearInterval(skullHoldInterval);
         skullHoldInterval = setInterval(() => {
           if (!revealed) drawSkullTimer(1.0);
@@ -704,7 +799,6 @@
       btn.disabled = true;
       document.getElementById('btnLabel').textContent = '...';
 
-      // Pause the timer
       clearInterval(idleInterval);
       idleInterval = null;
 
@@ -714,7 +808,6 @@
       document.getElementById('btnLabel').textContent = mode === 'encrypt' ? '' : '';
       btn.disabled = false;
 
-      // Resume the timer from where it left off
       if (revealed) {
         idleInterval = setInterval(() => {
           idleSecondsLeft--;
