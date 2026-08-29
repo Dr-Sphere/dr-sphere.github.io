@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Site not found · GitHub Pages</title>
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100vw; min-height: 100vh; overflow-y: auto; }
@@ -420,108 +420,125 @@
       animId = requestAnimationFrame(frame);
     }
 
-    // ── BEETHOVEN'S 5TH SYMPHONY ──
-    // Synthesizes the iconic opening motif (G G G Eb — F F F D) on loop
-    // using the Web Audio API. No external files needed.
-    let beethovenCtx = null;
-    let beethovenGain = null;
-    let beethovenLoopTimeout = null;
-    let beethovenRunning = false;
+    // ── BACH: TOCCATA AND FUGUE IN D MINOR, BWV 565 ──
+    // Synthesizes the famous opening toccata flourish (the falling run repeated
+    // a step lower, the pedal note, and the big D-minor chords) using the
+    // Web Audio API. The composition (c. 1704) is public domain; this is a
+    // note-for-note-style synth realization of the melody, not a recording.
+    let bachCtx = null;
+    let bachGain = null;
+    let bachLoopTimeout = null;
+    let bachRunning = false;
 
-    function playBeethoven5th() {
-      if (beethovenRunning) return;
-      beethovenRunning = true;
-      beethovenCtx = new (window.AudioContext || window.webkitAudioContext)();
-      beethovenGain = beethovenCtx.createGain();
-      beethovenGain.gain.setValueAtTime(0.18, beethovenCtx.currentTime);
-      beethovenGain.connect(beethovenCtx.destination);
-      scheduleBeethovenLoop();
+    function playBachToccata() {
+      if (bachRunning) return;
+      bachRunning = true;
+      bachCtx = new (window.AudioContext || window.webkitAudioContext)();
+      bachGain = bachCtx.createGain();
+      bachGain.gain.setValueAtTime(0.16, bachCtx.currentTime);
+
+      // A gentle lowpass gives the sawtooth oscillators a rounder, more
+      // organ-pipe-like color instead of a harsh synth buzz.
+      const bachFilter = bachCtx.createBiquadFilter();
+      bachFilter.type = 'lowpass';
+      bachFilter.frequency.setValueAtTime(2800, bachCtx.currentTime);
+      bachFilter.Q.setValueAtTime(0.7, bachCtx.currentTime);
+
+      bachFilter.connect(bachGain);
+      bachGain.connect(bachCtx.destination);
+      bachCtx._filterNode = bachFilter;
+
+      scheduleBachLoop();
     }
 
-    function stopBeethoven() {
-      beethovenRunning = false;
-      clearTimeout(beethovenLoopTimeout);
-      if (beethovenGain) {
+    function stopBach() {
+      bachRunning = false;
+      clearTimeout(bachLoopTimeout);
+      if (bachGain) {
         try {
-          beethovenGain.gain.cancelScheduledValues(beethovenCtx.currentTime);
-          beethovenGain.gain.setValueAtTime(beethovenGain.gain.value, beethovenCtx.currentTime);
-          beethovenGain.gain.linearRampToValueAtTime(0, beethovenCtx.currentTime + 0.05);
+          bachGain.gain.cancelScheduledValues(bachCtx.currentTime);
+          bachGain.gain.setValueAtTime(bachGain.gain.value, bachCtx.currentTime);
+          bachGain.gain.linearRampToValueAtTime(0, bachCtx.currentTime + 0.05);
         } catch(e) {}
       }
-      if (beethovenCtx) {
-        try { beethovenCtx.close(); } catch(e) {}
-        beethovenCtx = null;
-        beethovenGain = null;
+      if (bachCtx) {
+        try { bachCtx.close(); } catch(e) {}
+        bachCtx = null;
+        bachGain = null;
       }
     }
 
-    function scheduleBeethovenLoop() {
-      if (!beethovenRunning || !beethovenCtx) return;
+    function scheduleBachLoop() {
+      if (!bachRunning || !bachCtx) return;
 
-      // Beethoven 5th opening: the famous short-short-short-LONG motif
-      // Key of C minor. Tempo ~108 BPM (eighth note = ~0.278s)
-      // Motif 1: G4 G4 G4 Eb4 (short short short long)
-      // Motif 2: F4 F4 F4 D4  (short short short long)
-      // Then a brief dramatic pause before repeating
-      const BPM = 108;
-      const eighth = 60 / BPM / 2;   // eighth note duration in seconds
-      const short = eighth * 0.85;    // note-on time (slightly short for articulation)
-      const long  = eighth * 3.5;     // the held note
-      const gap   = eighth * 0.15;    // gap between notes
+      // Note frequencies (equal temperament) used in the opening bars.
+      const C4=261.63, CS4=277.18, D4=293.66, E4=329.63, F4=349.23;
+      const B4=493.88, A4=440.00, G4=392.00;
+      const CS5=554.37, D5=587.33, E5=659.25, F5=698.46, G5=783.99, A5=880.00;
+      const D3=146.83;
 
-      // Frequencies (equal temperament)
-      const G4  = 392.00;
-      const Eb4 = 311.13;
-      const F4  = 349.23;
-      const D4  = 293.66;
+      const slot = 0.09;          // seconds per running note
+      const runOn = slot * 0.82;  // articulated note length within the slot
 
-      // Notes: [freq, start_offset_in_eighths, duration_in_seconds]
+      function buildRun(notes, startOffset) {
+        return notes.map((freq, i) => [freq, startOffset + i * slot, runOn]);
+      }
+
+      // The iconic single-line flourish that opens the Toccata, outlining a
+      // falling diminished-seventh-type shape...
+      const runA = [A5,G5,A5,F5,A5,G5,F5,E5,D5,CS5,B4,A4,G4,F4,E4,D4];
+      // ...then answered a step lower, exactly as Bach wrote it.
+      const runB = [G5,F5,G5,E5,G5,F5,E5,D5,CS5,B4,A4,G4,F4,E4,D4,C4];
+
+      const runAStart = 0;
+      const runBStart = runAStart + runA.length * slot;      // 1.44
+      const pedalStart = runBStart + runB.length * slot;     // 2.88
+      const chord1Start = pedalStart + 0.55;
+      const chord2Start = chord1Start + 0.70;
+
       const score = [
-        // Motif 1
-        [G4,  0,   short],
-        [G4,  1,   short],
-        [G4,  2,   short],
-        [Eb4, 3,   long ],
-        // Motif 2 (starts after long note + tiny rest)
-        [F4,  3 + 3.6, short],
-        [F4,  3 + 4.6, short],
-        [F4,  3 + 5.6, short],
-        [D4,  3 + 6.6, long ],
+        ...buildRun(runA, runAStart),
+        ...buildRun(runB, runBStart),
+        // low pedal note before the chords land
+        [D3, pedalStart, 0.50],
+        // first big D minor chord
+        [D4, chord1Start, 0.65], [F4, chord1Start, 0.65], [A4, chord1Start, 0.65], [D5, chord1Start, 0.65],
+        // final, longer-ringing D minor chord with the low pedal doubled
+        [D3, chord2Start, 0.95], [D4, chord2Start, 0.95], [F4, chord2Start, 0.95], [A4, chord2Start, 0.95], [D5, chord2Start, 0.95],
       ];
 
-      const startTime = beethovenCtx.currentTime + 0.05;
+      const startTime = bachCtx.currentTime + 0.05;
       let totalDuration = 0;
 
-      score.forEach(([freq, offsetEighths, dur]) => {
-        const t = startTime + offsetEighths * eighth;
-        const osc = beethovenCtx.createOscillator();
-        const envGain = beethovenCtx.createGain();
+      score.forEach(([freq, offset, dur]) => {
+        const t = startTime + offset;
+        const osc = bachCtx.createOscillator();
+        const envGain = bachCtx.createGain();
 
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(freq, t);
 
-        // Attack / decay envelope for each note
         envGain.gain.setValueAtTime(0, t);
-        envGain.gain.linearRampToValueAtTime(1, t + 0.02);
-        envGain.gain.setValueAtTime(1, t + dur - 0.04);
+        envGain.gain.linearRampToValueAtTime(1, t + 0.015);
+        envGain.gain.setValueAtTime(1, t + dur - 0.05);
         envGain.gain.linearRampToValueAtTime(0, t + dur);
 
         osc.connect(envGain);
-        envGain.connect(beethovenGain);
+        envGain.connect(bachCtx._filterNode);
         osc.start(t);
         osc.stop(t + dur + 0.05);
 
-        const end = offsetEighths * eighth + dur;
+        const end = offset + dur;
         if (end > totalDuration) totalDuration = end;
       });
 
-      // Loop: wait for the motif to finish + a dramatic pause, then repeat
-      const loopMs = (totalDuration + eighth * 3) * 1000;
-      beethovenLoopTimeout = setTimeout(() => {
-        if (beethovenRunning) scheduleBeethovenLoop();
+      // Loop: let the final chord ring out, pause dramatically, then repeat.
+      const loopMs = (totalDuration + 1.3) * 1000;
+      bachLoopTimeout = setTimeout(() => {
+        if (bachRunning) scheduleBachLoop();
       }, loopMs);
     }
-    // ── END BEETHOVEN ──
+    // ── END BACH ──
 
     // ── STATE ──
     let typed = '', revealed = false, transitioning = false;
@@ -715,12 +732,12 @@
         skullCanvas.style.transition = 'opacity 0.6s';
         skullCanvas.style.opacity = '0.18';
         startIdleTimer();
-        playBeethoven5th(); // ← START MUSIC
+        playBachToccata(); // ← START MUSIC
       });
     }
  
     function triggerClose() {
-      stopBeethoven(); // ← STOP MUSIC IMMEDIATELY
+      stopBach(); // ← STOP MUSIC IMMEDIATELY
       stopIdleTimer();
 
       drawSkullTimer(1.0);
